@@ -2,7 +2,7 @@
 
 <video src="docs/demo.mp4" poster="docs/demo.jpg" controls width="100%"></video>
 
-[![Engram changes the answer of a language model from Paris to Berlin. Open the video.](docs/demo.jpg)](docs/demo.mp4)
+[![Engram changes the answer of a language model from Paris to Berlin. Open the video.](docs/demo.gif)](docs/demo.mp4)
 
 [Watch the demonstration (MP4)](docs/demo.mp4)
 
