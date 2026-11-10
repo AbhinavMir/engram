@@ -1,6 +1,4 @@
-<img src="docs/logo.png" alt="Engram logo" width="96">
-
-# Engram
+# <img src="docs/logo.png" alt="" width="38" align="absmiddle"> Engram
 
 <video src="docs/demo.mp4" poster="docs/demo.jpg" controls width="100%"></video>
 
