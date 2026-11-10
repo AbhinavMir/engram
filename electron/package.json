@@ -1,0 +1,10 @@
+{
+  "name": "engram",
+  "productName": "Engram",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "devDependencies": {
+    "electron": "^45.2.3"
+  }
+}

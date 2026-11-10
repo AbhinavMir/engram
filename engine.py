@@ -9,7 +9,7 @@ import torch, torch.nn as nn, torch.nn.functional as F
 from safetensors.torch import save_file, load_file
 
 MAX_TOKENS, MAX_NEW, POOL_ROWS, POOL_COLS = 200, 24, 220, 440
-HERE = os.path.dirname(os.path.abspath(__file__)); EXPORT_DIR = os.path.join(HERE, "exports")
+HERE = os.path.dirname(os.path.abspath(__file__)); EXPORT_DIR = os.environ.get("ENGRAM_EXPORTS", os.path.join(HERE, "exports"))
 
 class BenchError(ValueError): pass
 

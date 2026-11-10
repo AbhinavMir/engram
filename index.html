@@ -8,7 +8,7 @@ h1{font:600 22px/1 var(--sans);letter-spacing:-.01em;margin:0}
 h2{font:400 15px/1.25 var(--sans);color:var(--ink);margin:0 0 8px}h2 b{font-weight:700}
 h3{font:400 14px/1.3 var(--sans);margin:0 0 6px;color:var(--muted)}
 header{display:flex;align-items:center;gap:22px;padding:12px 22px 11px;border-bottom:3px double var(--ink)}
-#status{margin-left:auto;font:12px var(--mono);color:var(--muted);max-width:44%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#status.err{color:var(--bad)}#status.busy{color:var(--amber)}
+#spin{margin-left:auto}
 main{display:grid;grid-template-columns:276px minmax(0,1fr) 392px;min-height:0}
 main>*{min-height:0;overflow-y:auto;padding:16px 20px}
 #left{border-right:1px solid var(--line)}#right{border-left:1px solid var(--line)}
@@ -45,10 +45,18 @@ details{margin-top:8px}summary{cursor:pointer;color:var(--muted);font-size:14px}
 #empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font:16px var(--sans);text-align:center}
 #matname{font:12px var(--mono);overflow-wrap:anywhere;margin:0 0 7px;color:var(--muted)}
 @media(max-width:1180px){body{overflow:auto;height:auto}main{grid-template-columns:1fr}#center{overflow:visible}#gridwrap{max-height:420px}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ring{display:inline-block;flex:none;width:14px;height:14px;border-radius:50%;border:2px solid rgba(31,111,74,.22);border-top-color:var(--amber);animation:spin .7s linear infinite}
+button.busy{position:relative;color:transparent!important;pointer-events:none}
+button.busy::after{content:"";position:absolute;inset:0;margin:auto;width:13px;height:13px;border-radius:50%;border:2px solid rgba(31,111,74,.22);border-top-color:var(--amber);animation:spin .7s linear infinite}
+button.go.busy::after,button.apply.busy::after{border-color:rgba(255,255,255,.35);border-top-color:#fff}
+@media(prefers-reduced-motion:reduce){.ring,button.busy::after{animation-duration:2.4s}}
+#toasts{position:fixed;right:18px;bottom:18px;z-index:20;display:flex;flex-direction:column;gap:8px;width:340px}
+.toast{background:#fff;border:1px solid var(--line);border-left:3px solid var(--bad);border-radius:8px;box-shadow:0 6px 20px rgba(22,33,27,.16);padding:10px 12px;font-size:14px;cursor:pointer;overflow-wrap:anywhere}
 </style></head><body>
 <header><h1>Engram</h1>
-<div class="row"><input id="path" aria-label="Local model folder" placeholder="Absolute path to a Hugging Face model folder" spellcheck="false"><button id="load">Load</button></div>
-<div id="status" role="status" aria-live="polite">No model loaded</div></header>
+<div class="row"><input id="path" aria-label="Local model folder" placeholder="Absolute path to a Hugging Face model folder" spellcheck="false"><button id="load">Load</button><button type="button" class="i" id="modelinfo" data-tip="No model is loaded.">i</button></div>
+<span id="spin" class="ring" hidden aria-hidden="true"></span></header>
 <main>
 <aside id="left">
 <section><h2><label for="prompt" style="all:unset"><b>Prompt</b></label></h2>
@@ -115,18 +123,23 @@ details{margin-top:8px}summary{cursor:pointer;color:var(--muted);font-size:14px}
 <section><div class="head"><h2><b>Figure 4.</b> Matrix<button type="button" class="i" id="matinfo" data-tip="Open a matrix from Figure 3.">i</button></h2><div class="seg" id="matseg"><button data-v="weights">Weights</button><button data-v="lit" aria-pressed="true">Lit</button><button data-v="edit">Edit</button></div></div>
 <p id="matname">Trace a prompt to open a matrix.</p><canvas id="matrix" aria-label="Matrix heatmap. Drag to select rows and columns."></canvas></section>
 <section id="contribbox" hidden><h2><b>Table 1.</b> Largest contributions<button type="button" class="i" data-tip="These entries of the matrix did the most work for the selected token. W is the weight, x is its input, and W·x is the product of the two.">i</button></h2><table><thead><tr><th>row, col</th><th>W</th><th>x</th><th>W·x</th></tr></thead><tbody id="contrib"></tbody></table></section>
-</aside></main><div id="tip"></div>
+</aside></main><div id="tip"></div><div id="toasts" aria-live="assertive"></div>
 <script>
 const $=id=>document.getElementById(id),AMB=[31,111,74],CY=[9,54,38],BG=[238,245,240];
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const S={info:null,tr:null,view:'edited',pos:0,target:null,foil:null,mat:null,mode:'lit',matName:null,track:null};
 const mix=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));const css=c=>`rgb(${c})`;
 const show=t=>t.replace(/\n/g,'⏎').replace(/^ /,'·');const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function status(m,c=''){const s=$('status');s.textContent=m;s.className=c}
-async function api(path,body){status('Working','busy');const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});const j=await r.json();if(!r.ok){status(j.error,'err');throw new Error(j.error)}status(S.info?modelLine():'Ready');return j}
-const modelLine=()=>`${S.info.model.split('/').pop()}  ${S.info.layers} layers  ${(S.info.params/1e9).toFixed(2)} B parameters  ${S.info.device}`;
-const guard=f=>async(...a)=>{try{await f(...a)}catch(e){if(!$('status').classList.contains('err'))status(e.message,'err')}};
-function setInfo(i){S.info=i;status(modelLine());$('stackbox').hidden=!i.edits.length;renderStack();renderPins();initControls(i)}
+function toast(m){const d=document.createElement('div');d.className='toast';d.setAttribute('role','alert');d.textContent=m;d.onclick=()=>d.remove();$('toasts').append(d);setTimeout(()=>d.remove(),7000)}
+const L={n:0,btn:null};
+function busy(d){L.n+=d;clearTimeout(L.t);if(L.n>0){$('spin').hidden=false;if(L.btn)L.btn.classList.add('busy')}else L.t=setTimeout(()=>{$('spin').hidden=true;document.querySelectorAll('button.busy').forEach(b=>b.classList.remove('busy'))},120)}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');L.btn=b&&!b.closest('.tabs,.seg')&&!b.classList.contains('i')&&b.id!=='aiStop'?b:null;setTimeout(()=>{L.btn=null},0)},true);
+async function api(path,body){busy(1);try{const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});const j=await r.json();if(!r.ok)throw new Error(j.error);return j}finally{busy(-1)}}
+const modelLine=()=>`${S.info.model.split('/').pop()} has ${S.info.layers} layers and ${(S.info.params/1e9).toFixed(2)} billion parameters. It runs on ${S.info.device}.`;
+const guard=f=>async(...a)=>{try{await f(...a)}catch(e){toast(e.message)}};
+const resync=async()=>{if(S.tr){setTrace(await api('/api/trace',{prompt:$('prompt').value,chat:$('chat').checked}),false);await after()}else setInfo((await (await fetch('/api/state')).json()).info)};
+const listed=f=>guard(async(...a)=>{try{await f(...a)}catch(e){if(/^No edit /.test(e.message))return resync();throw e}});
+function setInfo(i){S.info=i;setTip($('modelinfo'),modelLine());$('stackbox').hidden=!i.edits.length;renderStack();renderPins();initControls(i)}
 const b2=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 function fit(c,w,h){const d=devicePixelRatio||1;c.width=w*d;c.height=h*d;c.style.width=w+'px';c.style.height=h+'px';const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);return x}
 const curRun=()=>S.tr&&(S.view==='edited'&&S.tr.edited?S.tr.edited:S.tr.base);
@@ -222,7 +235,7 @@ function initControls(i){if(i.head_width)setTip($('scaleTip'),$('scaleTip').data
  const kinds=[...new Set(i.matrices.filter(m=>m.rows===i.hidden).map(m=>m.kind))].sort((a,b)=>rank(a)-rank(b));$('kind').innerHTML=kinds.map(k=>`<option>${esc(k)}</option>`).join('');$('layer').max=i.layers-1;$('layer').value=Math.round(i.layers*.75);syncV()}
 function renderStack(){const i=S.info;$('stack').innerHTML=i.edits.map(e=>`<div class="edit"><input type="checkbox" ${e.on?'checked':''} data-id="${e.id}" aria-label="Turn edit on or off"><div><p>${esc(e.label)}</p><small>${esc(e.stats.module)}</small></div><button type="button" class="i" data-tip="${esc(`This edit changes ${e.stats.changed} entries. The Frobenius norm of the change is ${e.stats.frobenius.toFixed(3)}${e.stats.base_frobenius?', and the norm of the original matrix is '+e.stats.base_frobenius.toFixed(1):''}. The largest change to one entry is ${e.stats.max_entry.toFixed(4)}.${e.stats.write_at_position!=null?' At the selected token the edit writes a vector of size '+e.stats.write_at_position.toFixed(2)+'.':''}`)}">i</button><button class="tiny" data-rm="${e.id}" aria-label="Remove edit">Remove</button></div>`).join('')+'';
  if(i.residual!=null)setTip($('stacktip'),`Clear a checkbox to turn an edit off. Press Remove to delete it. Save writes the active edits to a file that you can load again. After the last removal, the weights differed from the original weights by ${i.residual}.`);
- $('stack').querySelectorAll('input').forEach(b=>b.onchange=guard(()=>act('/api/toggle',{id:+b.dataset.id,on:b.checked})));$('stack').querySelectorAll('[data-rm]').forEach(b=>b.onclick=guard(()=>act('/api/remove',{id:+b.dataset.rm})))}
+ $('stack').querySelectorAll('input').forEach(b=>b.onchange=listed(()=>act('/api/toggle',{id:+b.dataset.id,on:b.checked})));$('stack').querySelectorAll('[data-rm]').forEach(b=>b.onclick=listed(()=>act('/api/remove',{id:+b.dataset.rm})))}
 function renderPins(){const i=S.info;$('pins').innerHTML=i.pins.map(p=>`<span class="chip"><b>${p.group}</b>${esc(p.label)}<button data-id="${p.id}" aria-label="Remove pin">×</button></span>`).join('');$('pins').querySelectorAll('button').forEach(b=>b.onclick=guard(async()=>{setInfo((await api('/api/unpin',{id:+b.dataset.id})).info)}))}
 $('pinA').onclick=guard(async()=>setInfo((await api('/api/pin',{group:'A',pos:S.pos})).info));$('pinB').onclick=guard(async()=>setInfo((await api('/api/pin',{group:'B',pos:S.pos})).info));
 async function act(path,body){const t=await api(path,body);setTrace(t,false);await after()}
@@ -231,16 +244,16 @@ function setTrace(t,fresh){if(!t.tokens){setInfo(t.info);return}S.tr=t;setInfo(t
  $('answers').hidden=$('nextbox').hidden=false;
  $('ans').innerHTML=`<p class="answer"><small>Base</small>${esc(t.answer_base||'(empty)')}</p>`+(t.answer_edited!==null?`<p class="answer e"><small>Edited</small>${esc(t.answer_edited||'(empty)')}</p>`:'');sweep();drawMap();renderNext()}
 async function writeAnswer(){if(!S.tr)throw new Error('Trace a prompt first.');if(!$('target').value)throw new Error('Enter the word that the model must say.');const module=matAt($('kind').value,+$('layer').value);if(!module)throw new Error('This layer has no matrix of that type.');
- if(S.lastTry!=null&&S.info.edits.some(e=>e.id===S.lastTry))await api('/api/remove',{id:S.lastTry});S.matName=module;S.pos=S.editPos;
+ if(S.lastTry!=null&&S.info.edits.some(e=>e.id===S.lastTry))await api('/api/remove',{id:S.lastTry}).catch(e=>{if(!/^No edit /.test(e.message))throw e});S.matName=module;S.pos=S.editPos;
  await act('/api/edit',{op:'rank_one',module,pos:S.editPos,alpha:+$('alpha').value,key:$('key').value,target:tTarget(),foil:tFoil()});S.lastTry=S.info.edits.at(-1).id}
 $('applyAnswer').onclick=guard(async()=>{if(S.writing)return;S.writing=true;try{await writeAnswer()}finally{S.writing=false}});
 $('applyScale').onclick=guard(async()=>{if(!S.matName)throw new Error('Open a matrix first.');drag=null;await act('/api/edit',{op:'scale',module:S.matName,pos:S.pos,rows:$('rows').value,cols:$('cols').value,factor:+$('factor').value})});
 $('applyDir').onclick=guard(async()=>{if(!S.matName)throw new Error('Open a matrix first.');await act('/api/edit',{op:'remove_direction',module:S.matName,pos:S.pos,strength:+$('strength').value,source:$('source').value,target:tTarget(),foil:tFoil()})});
 // ---------- AI ----------
 const AI={set:null,local:{},stop:false,proposal:null};
-async function aiGet(path){const r=await fetch(path),j=await r.json();if(!r.ok){status(j.error,'err');throw new Error(j.error)}return j}
+async function aiGet(path){const r=await fetch(path),j=await r.json();if(!r.ok)throw new Error(j.error);return j}
 const aiSave=async b=>{AI.set=await api('/api/ai/settings',b);renderAI()};
-async function aiOpen(){try{[AI.set,AI.local]=await Promise.all([aiGet('/api/ai/settings'),aiGet('/api/ai/local')]);renderAI()}catch(e){}if(!$('aiGoal').value&&$('target').value)$('aiGoal').value=`Make the model say ${$('target').value.trim()} instead of ${$('foil').value.trim()}.`}
+async function aiOpen(){busy(1);try{[AI.set,AI.local]=await Promise.all([aiGet('/api/ai/settings'),aiGet('/api/ai/local')]);renderAI()}catch(e){toast(e.message)}finally{busy(-1)}if(!$('aiGoal').value&&$('target').value)$('aiGoal').value=`Make the model say ${$('target').value.trim()} instead of ${$('foil').value.trim()}.`}
 function renderAI(){const a=AI.set,p=a.presets.find(x=>x.id===a.provider);$('aiProv').innerHTML=a.presets.map(x=>`<option value="${x.id}" ${x.id===a.provider?'selected':''}>${esc(x.name)}${AI.local[x.id]&&AI.local[x.id].running?' · running':''}</option>`).join('');
  $('aiKeyRow').hidden=!p.needsKey&&p.id!=='custom';$('aiKey').value='';$('aiKey').placeholder=a.hasKey[p.id]?'Saved':'Paste the key';$('aiUrlRow').hidden=$('aiWireRow').hidden=p.id!=='custom';$('aiUrl').value=a.endpoints[p.id]||'';$('aiWire').value=a.wire;
  $('aiModel').value=a.models[p.id]||p.model||'';$('aiModels').innerHTML=((AI.local[p.id]||{}).models||[]).map(m=>`<option value="${esc(m)}">`).join('')}
@@ -252,8 +265,8 @@ async function aiDo(a){try{if(a.action==='remove_edit'){await act('/api/remove',
   else await act('/api/edit',{op:'scale',module,pos:S.pos,rows:a.rows,cols:a.cols,factor:a.factor})}
  return{answer_edited:S.tr.answer_edited,edits:S.info.edits.map(e=>({id:e.id,label:e.label}))}}catch(e){return{error:e.message}}}
 function aiLog(a,res){const li=document.createElement('li');const text=a.action==='finish'?a.summary:a.why;const detail=a.action==='rank_one'?`layer ${a.layer} ${a.component}, α ${a.alpha}, ${JSON.stringify(a.foil)} to ${JSON.stringify(a.target)}`:a.action==='scale'?`layer ${a.layer} ${a.component}, rows ${a.rows||'all'}, columns ${a.cols||'all'}, factor ${a.factor}`:a.action==='remove_edit'?`remove edit ${a.id}`:(a.success?'goal reached':'goal not reached');li.innerHTML=`${esc(text)}<code>${esc(detail)}</code>`+(res?`<code>${esc(res.error?'Error: '+res.error:(res.answer_edited===null?'No edit is active.':'Answer: '+res.answer_edited.slice(0,90)))}</code>`:'');$('aiLog').append(li)}
-$('aiGo').onclick=guard(async()=>{if(!S.tr)throw new Error('Trace a prompt first.');const goal=$('aiGoal').value.trim();if(!goal)throw new Error('Enter a goal.');AI.stop=false;$('aiLog').innerHTML='';$('aiApply').hidden=true;$('aiGo').disabled=true;const write=$('aiWrite').checked,history=[];
- try{for(let i=0;i<+$('aiSteps').value&&!AI.stop;i++){const{action:a}=await api('/api/ai/step',{goal,state:aiState(),history,write});if(a.action==='finish'){aiLog(a);break}if(!write){aiLog(a);AI.proposal=a;$('aiApply').hidden=false;break}const res=await aiDo(a);aiLog(a,res);history.push({action:a,result:res})}}finally{$('aiGo').disabled=false}});
+$('aiGo').onclick=guard(async()=>{if(!S.tr)throw new Error('Trace a prompt first.');const goal=$('aiGoal').value.trim();if(!goal)throw new Error('Enter a goal.');AI.stop=false;$('aiLog').innerHTML='';$('aiApply').hidden=true;$('aiGo').disabled=true;busy(1);const write=$('aiWrite').checked,history=[];
+ try{for(let i=0;i<+$('aiSteps').value&&!AI.stop;i++){const{action:a}=await api('/api/ai/step',{goal,state:aiState(),history,write});if(a.action==='finish'){aiLog(a);break}if(!write){aiLog(a);AI.proposal=a;$('aiApply').hidden=false;break}const res=await aiDo(a);aiLog(a,res);history.push({action:a,result:res})}}finally{$('aiGo').disabled=false;busy(-1)}});
 $('aiStop').onclick=()=>{AI.stop=true};$('aiApply').onclick=guard(async()=>{const r=await aiDo(AI.proposal);aiLog(AI.proposal,r);$('aiApply').hidden=true});
 $('save').onclick=guard(async()=>{const r=await api('/api/export',{name:$('savename').value});$('saved').textContent=`Saved ${r.path}`});$('load2').onclick=guard(()=>act('/api/import',{path:$('imp').value}));
 $('trace').onclick=guard(async()=>{const t=await api('/api/trace',{prompt:$('prompt').value,chat:$('chat').checked});setTrace(t,true);S.target=null;$('target').value='';setCurrent();await doTrack();await openPlace();$('gridwrap').scrollTop=Math.max(0,G.top+S.pos*G.rh-$('gridwrap').clientHeight*.55)});

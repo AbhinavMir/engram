@@ -1,5 +1,9 @@
 # Engram
 
+[![Engram changes the answer of a language model from Paris to Berlin. Open the video.](docs/demo.jpg)](docs/demo.mp4)
+
+[Watch the demonstration (MP4)](docs/demo.mp4)
+
 Engram is a local visual instrument for the inspection and direct editing of the weights of Hugging Face transformers. It computes no gradient and runs no training loop. Each edit is a closed-form change to named weight matrices, and each edit is reversible.
 
 ## 1. Method
@@ -51,11 +55,21 @@ Ollama, LM Studio, and llama.cpp run on the local computer and need no key. Anth
 
 The AI loop has been tested only against a scripted stand-in server, in the OpenAI-compatible and Anthropic request formats.
 
-## 5. Verification
+## 5. Desktop application
+
+The folder `electron/` builds a macOS application. The application starts `server.py` with a Python that you choose, and it stores the choice in `~/.engram/app.json`. Add the key `model` to that file to load a model when the application starts.
+
+    cd ai && bun install && cd ../electron
+    bun install && bun pm trust electron
+    ./build.sh
+
+The application is at `electron/build/Engram.app`.
+
+## 6. Verification
 
 `test_engine.py` checks the operations and exact rollback on Qwen2.5-0.5B-Instruct and on a tiny random GPT-2. It expects local model folders at `../experiment/models`. The `--paper` flag also needs the experiment code of the paper, which is not in this repository.
 
-## 6. Related paper
+## 7. Related paper
 
 The rank-one write in Engram is the edit that the paper below evaluates. On 200 held-out notes of a synthetic symptom-status task, one closed-form edit to Qwen2.5-1.5B-Instruct raised cell accuracy from 0.656 to 0.879.
 

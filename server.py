@@ -1,6 +1,6 @@
 """Local server for Engram. Binds to 127.0.0.1 only.
 Usage: python server.py [--model DIR] [--device mps|cuda|cpu] [--port 7860]"""
-import argparse, atexit, json, os, shutil, socket, subprocess, threading, traceback, urllib.error, urllib.request
+import argparse, atexit, json, os, shutil, signal, socket, subprocess, sys, threading, traceback, urllib.error, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from engine import Engine, BenchError, HERE
 
@@ -78,6 +78,7 @@ class H(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     p = argparse.ArgumentParser(); p.add_argument("--model"); p.add_argument("--device"); p.add_argument("--port", type=int, default=7860); ARGS = p.parse_args()
     if ARGS.model: E["engine"] = Engine.load(ARGS.model, ARGS.device); print("loaded", E["engine"].name, "on", E["engine"].device, flush=True)
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     start_ai()
     print(f"Engram: http://127.0.0.1:{ARGS.port}", flush=True)
     ThreadingHTTPServer(("127.0.0.1", ARGS.port), H).serve_forever()
