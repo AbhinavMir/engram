@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Engram</title>
+<style>
+:root{--bg:#fff;--raised:#f7faf8;--line:#d9e2dc;--ink:#16211b;--muted:#54635a;--amber:#1f6f4a;--cyan:#0b4a34;--bad:#a4261c;--sans:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;--mono:"SF Mono",Menlo,monospace}
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--sans);display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+h1{font:600 22px/1 var(--sans);letter-spacing:-.01em;margin:0}
+h2{font:400 15px/1.25 var(--sans);color:var(--ink);margin:0 0 8px}h2 b{font-weight:700}
+h3{font:400 14px/1.3 var(--sans);margin:0 0 6px;color:var(--muted)}
+header{display:flex;align-items:center;gap:22px;padding:12px 22px 11px;border-bottom:3px double var(--ink)}
+#status{margin-left:auto;font:12px var(--mono);color:var(--muted);max-width:44%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#status.err{color:var(--bad)}#status.busy{color:var(--amber)}
+main{display:grid;grid-template-columns:276px minmax(0,1fr) 392px;min-height:0}
+main>*{min-height:0;overflow-y:auto;padding:16px 20px}
+#left{border-right:1px solid var(--line)}#right{border-left:1px solid var(--line)}
+#center{display:flex;flex-direction:column;gap:6px;overflow:hidden}#lower{margin-top:12px}
+section+section{margin-top:20px;padding-top:14px;border-top:1px solid var(--line)}
+input,textarea,select{width:100%;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:6px 8px;font:13px var(--mono)}
+input[type=range]{padding:0;border:0;accent-color:var(--amber)}
+textarea{resize:vertical;min-height:72px;font:15px/1.4 var(--sans)}select{font:14px var(--sans)}
+button{background:#fff;color:var(--ink);border:1px solid #b9c6be;border-radius:7px;padding:5px 11px;font:14px var(--sans);cursor:pointer}
+button:hover{border-color:var(--amber)}button.go,button.apply{background:var(--amber);border-color:var(--amber);color:#fff}button.apply{width:100%;margin-top:10px;padding:7px}
+button:disabled{opacity:.5;cursor:default}
+:is(button,input,textarea,select,canvas,summary):focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+.i{display:inline-grid;place-items:center;width:15px;height:15px;margin-left:6px;padding:0;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--muted);font:500 11px/1 var(--sans);vertical-align:1px;cursor:help}.i:hover{border-color:var(--amber);color:var(--amber)}
+.row{display:flex;gap:7px;align-items:center}.row>input{flex:1;min-width:0}
+header .row{flex:0 1 560px}
+label{display:block;font-size:14px;color:var(--ink)}label.check{display:flex;gap:7px;align-items:center;margin:0}label.check input{width:auto;accent-color:var(--amber)}
+.seg{display:inline-flex;gap:4px}.seg button{border:0;border-radius:999px;background:none;color:var(--muted);padding:2px 10px;font-size:13px}.seg button[aria-pressed=true]{background:#e4f0e8;color:var(--ink)}
+.tabs{display:flex;gap:4px;margin-bottom:12px}.tabs button{border:0;border-radius:999px;background:none;color:var(--muted);padding:4px 13px;font-size:14px}.tabs button[aria-selected=true]{background:#e4f0e8;color:var(--ink)}
+.head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px;gap:10px}.head h2{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.legend{flex:none}
+#gridwrap{flex:1 1 56%;min-height:150px;overflow-y:auto;position:relative}canvas{display:block}
+#lower{flex:0 0 212px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px}
+.answer{font-size:15px;margin:0 0 8px;white-space:pre-wrap;overflow-wrap:anywhere}.answer small{display:block;color:var(--muted);font:13px var(--sans)}.answer.e small{color:var(--amber)}
+table{width:100%;border-collapse:collapse;font:12px var(--mono);border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink)}td,th{padding:3px 4px;text-align:right}thead th{border-bottom:.75px solid var(--ink);font:13px var(--sans);color:var(--ink)}td:first-child,th:first-child{text-align:left}
+.tiny{padding:0 7px;font-size:13px}.next td:first-child{max-width:110px;overflow:hidden;white-space:pre}
+.chip{display:inline-flex;gap:5px;align-items:center;font:12px var(--mono);background:var(--raised);border:1px solid var(--line);border-radius:7px;padding:2px 3px 2px 7px;margin:0 4px 4px 0;white-space:pre}.chip b{color:var(--muted);font-weight:400}.chip button{border:0;background:none;color:var(--muted);padding:0 4px}
+.edit{display:grid;grid-template-columns:auto 1fr auto auto;gap:7px;padding:6px 0;border-bottom:1px solid var(--line);align-items:start}.edit input{width:auto;margin-top:4px;accent-color:var(--amber)}.edit p{margin:0;font-size:14px}.edit small{display:block;color:var(--muted);font:11px var(--mono);overflow-wrap:anywhere;margin-top:2px}.edit .i{margin:3px 0 0}
+.f{display:grid;grid-template-columns:104px minmax(0,1fr);gap:8px;align-items:center;margin:7px 0}.val{font:13px var(--mono);white-space:pre}.slide{display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:8px;align-items:center}.slide output{font:13px var(--mono);text-align:right}
+details{margin-top:8px}summary{cursor:pointer;color:var(--muted);font-size:14px}
+.mono{font-family:var(--mono)}.small{font-size:13px;color:var(--muted);margin:6px 0 0}
+#aiLog{margin:10px 0 0;padding:0;list-style:decimal inside}#aiLog li{font-size:14px;padding:5px 0;border-top:1px solid var(--line)}#aiLog code{font:12px var(--mono);color:var(--muted);display:block;overflow-wrap:anywhere}
+#tip{position:fixed;display:none;pointer-events:none;z-index:9;background:#fff;color:var(--ink);border:1px solid #b9c6be;border-radius:7px;box-shadow:0 5px 16px rgba(22,33,27,.13);padding:8px 10px;font:12px var(--mono);white-space:pre;max-width:340px}#tip.wrap{font:14px/1.45 var(--sans);white-space:normal;width:310px}
+#tip b{font-family:var(--sans);display:block;margin-bottom:3px}
+.legend{display:flex;gap:12px;font-size:13px;color:var(--muted);align-items:center}.key{display:inline-block;width:16px;border-top:2px solid;vertical-align:middle;margin-right:5px}.key.d{border-top-style:dashed}
+#empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font:16px var(--sans);text-align:center}
+#matname{font:12px var(--mono);overflow-wrap:anywhere;margin:0 0 7px;color:var(--muted)}
+@media(max-width:1180px){body{overflow:auto;height:auto}main{grid-template-columns:1fr}#center{overflow:visible}#gridwrap{max-height:420px}}
+</style></head><body>
+<header><h1>Engram</h1>
+<div class="row"><input id="path" aria-label="Local model folder" placeholder="Absolute path to a Hugging Face model folder" spellcheck="false"><button id="load">Load</button></div>
+<div id="status" role="status" aria-live="polite">No model loaded</div></header>
+<main>
+<aside id="left">
+<section><h2><label for="prompt" style="all:unset"><b>Prompt</b></label></h2>
+<textarea id="prompt">The capital of France is</textarea>
+<div class="row" style="justify-content:space-between;margin-top:8px"><label class="check"><input type="checkbox" id="chat">Chat format</label><button class="go" id="trace">Trace</button></div></section>
+<section id="answers" hidden><h2><b>Answer</b></h2><div id="ans"></div></section>
+<section id="nextbox" hidden><h2><b>Next token</b><button type="button" class="i" data-tip="These are the tokens that the model predicts after the selected token. Press Use to make a token the answer that you want.">i</button></h2><table class="next"><tbody id="next"></tbody></table></section>
+</aside>
+<div id="center">
+<div class="head"><h2><b>Figure 1.</b> Layer trace<button type="button" class="i" data-tip="Each row is one token of the text and each column is one layer of the model. A cell shows the token that the model predicts next at that layer. A darker green means a higher probability. After an edit, a dark outline marks each prediction that changed. Click a row to inspect that token. Clicking a row does not change where an Answer edit acts.">i</button></h2><div class="seg" id="runseg" hidden><button data-v="base">Base</button><button data-v="edited" aria-pressed="true">Edited</button></div></div>
+<canvas id="axis" aria-hidden="true"></canvas><div id="gridwrap"><canvas id="grid" tabindex="0" aria-label="Layer trace. Use the up and down arrows to change the selected token."></canvas><div id="empty">Enter a prompt and press Trace.</div></div>
+<div id="lower">
+<div><div class="head"><h2><b>Figure 2.</b> <span id="charttitle">Token by layer</span><button type="button" class="i" data-tip="The line shows the token at each layer, for the selected token position. With two tokens, the line shows how far the wanted token is ahead of the current token. A value above zero means that the wanted token wins at that layer.">i</button></h2><div class="legend" id="legend"></div></div><div id="chart"></div></div>
+<div><div class="head"><h2><b>Figure 3.</b> Model map<button type="button" class="i" data-tip="Each cell is one weight matrix of the model, and the columns are the layers. A darker cell means that the matrix wrote a larger output for the selected token, compared with the other cells in its row. Click a cell to open that matrix.">i</button></h2></div><canvas id="map" tabindex="0" aria-label="Matrix map. Click a cell to open that matrix."></canvas></div>
+</div></div>
+<aside id="right">
+<section id="editbox" hidden>
+<h2><b>Edit the model</b></h2>
+<div class="tabs" role="tablist" id="tabs"><button role="tab" data-tab="answer" aria-selected="true">Answer</button><button role="tab" data-tab="matrix">Matrix</button><button role="tab" data-tab="direction">Direction</button><button role="tab" data-tab="ai">AI</button></div>
+
+<div data-panel="answer">
+<h3>Change what the model says<button type="button" class="i" data-tip="This edit adds one rank-one matrix to one layer: W′ = W + α u vᵀ. The vector u moves the output from the current token toward the wanted token. The vector v is the input at the selected token, so the edit acts on inputs that resemble it. The edit acts at the last token of the prompt, which is the token just before the answer. To choose another prompt token, open More settings. Each new Apply replaces your previous try. Edits are reversible.">i</button></h3>
+<div class="f"><span>At the token</span><span class="val" id="sTok"></span></div>
+<div class="f"><label for="foil">Model says</label><input id="foil" spellcheck="false"></div>
+<div class="f"><label for="target">Make it say</label><input id="target" spellcheck="false" placeholder="Type one word"></div>
+<div class="f"><label for="layer">Layer</label><div class="slide"><input type="range" id="layer" min="0" max="23" value="18"><output id="layerV"></output></div></div>
+<div class="f"><label for="alpha">Strength</label><div class="slide"><input type="range" id="alpha" min="0.1" max="4" step="0.1" value="0.5"><output id="alphaV"></output></div></div>
+<details><summary>More settings</summary>
+<div class="f"><label for="editPos">Edit at token</label><select id="editPos"></select></div>
+<div class="f"><label for="kind">Matrix type</label><select id="kind"></select></div>
+<div class="f"><label for="key">Trigger</label><select id="key"><option value="position">Selected token</option><option value="contrast">Pins A minus B</option></select></div></details>
+<button class="apply" id="applyAnswer">Apply edit</button></div>
+
+<div data-panel="matrix" hidden>
+<h3>Scale or clear entries<button type="button" class="i" id="scaleTip" data-tip="This edit multiplies the entries in the rows and columns that you choose. A factor of 0 clears them. Drag a box on Figure 4 to fill in the rows and columns, or leave a field empty to use all of them.">i</button></h3>
+<p id="scaleName" class="val small"></p>
+<div class="f"><label for="rows">Rows</label><input id="rows" placeholder="all" spellcheck="false"></div>
+<div class="f"><label for="cols">Columns</label><input id="cols" placeholder="all" spellcheck="false"></div>
+<div class="f"><label for="factor">Factor</label><input id="factor" type="number" step="0.1" value="0"></div>
+<button class="apply" id="applyScale">Apply to this matrix</button></div>
+
+<div data-panel="direction" hidden>
+<h3>Remove a direction from a matrix<button type="button" class="i" data-tip="This edit removes one direction from the output of the open matrix: W′ = W − λ d dᵀ W. To get the direction from examples, select a token in Figure 1 that shows the behavior and pin it to A. Then select a token that does not show the behavior and pin it to B. A strength of 1 removes the direction fully.">i</button></h3>
+<div id="pins"></div><div class="row"><button id="pinA">Pin to A</button><button id="pinB">Pin to B</button></div>
+<div class="f" style="margin-top:10px"><label for="source">Direction</label><select id="source"><option value="pins">Pins A minus B</option><option value="tokens">Wanted minus current token</option></select></div>
+<div class="f"><label for="strength">Strength</label><input id="strength" type="number" step="0.1" value="1"></div>
+<button class="apply" id="applyDir">Apply to this matrix</button></div>
+
+<div data-panel="ai" hidden>
+<h3>Let a model write the edit<button type="button" class="i" data-tip="The AI reads the prompt, the tokens, and the predictions, and it writes an edit. Engram applies the edit and shows the AI the new answer, so that it can try again. A hosted provider receives this text. A local provider keeps it on this computer. Keys stay in one file on this computer, and the page cannot read them.">i</button></h3>
+<div class="f"><label for="aiProv">Provider</label><select id="aiProv"></select></div>
+<div class="f" id="aiKeyRow"><label for="aiKey">API key</label><input id="aiKey" type="password" autocomplete="off" spellcheck="false"></div>
+<div class="f" id="aiUrlRow"><label for="aiUrl">Address</label><input id="aiUrl" spellcheck="false" placeholder="http://localhost:8000/v1"></div>
+<div class="f" id="aiWireRow"><label for="aiWire">Format</label><select id="aiWire"><option value="compatible">OpenAI compatible</option><option value="anthropic">Anthropic</option></select></div>
+<div class="f"><label for="aiModel">Model</label><input id="aiModel" list="aiModels" spellcheck="false"><datalist id="aiModels"></datalist></div>
+<label for="aiGoal" style="margin-top:9px">Goal</label><textarea id="aiGoal" style="margin-top:3px;min-height:58px"></textarea>
+<div class="row" style="justify-content:space-between;margin-top:8px"><label class="check"><input type="checkbox" id="aiWrite" checked>Apply edits</label><label class="check">Tries<input id="aiSteps" type="number" min="1" max="12" value="6" style="width:56px"></label></div>
+<div class="row" style="margin-top:8px"><button class="go" id="aiGo" style="flex:1">Ask the AI</button><button id="aiStop">Stop</button></div>
+<ol id="aiLog"></ol><button id="aiApply" class="apply" hidden>Apply this edit</button></div>
+</section>
+<section id="stackbox" hidden><h2><b>Applied edits</b><button type="button" class="i" id="stacktip" data-tip="Clear a checkbox to turn an edit off. Press Remove to delete it. Save writes the active edits to a file that you can load again.">i</button></h2><div id="stack"></div>
+<div class="row" style="margin-top:8px"><input id="savename" aria-label="Save name" placeholder="File name" spellcheck="false"><button id="save">Save</button></div>
+<div class="row" style="margin-top:6px"><input id="imp" aria-label="Delta file to load" placeholder="Absolute path to a saved delta" spellcheck="false"><button id="load2">Load</button></div><p class="small mono" id="saved" style="overflow-wrap:anywhere"></p></section>
+<section><div class="head"><h2><b>Figure 4.</b> Matrix<button type="button" class="i" id="matinfo" data-tip="Open a matrix from Figure 3.">i</button></h2><div class="seg" id="matseg"><button data-v="weights">Weights</button><button data-v="lit" aria-pressed="true">Lit</button><button data-v="edit">Edit</button></div></div>
+<p id="matname">Trace a prompt to open a matrix.</p><canvas id="matrix" aria-label="Matrix heatmap. Drag to select rows and columns."></canvas></section>
+<section id="contribbox" hidden><h2><b>Table 1.</b> Largest contributions<button type="button" class="i" data-tip="These entries of the matrix did the most work for the selected token. W is the weight, x is its input, and W·x is the product of the two.">i</button></h2><table><thead><tr><th>row, col</th><th>W</th><th>x</th><th>W·x</th></tr></thead><tbody id="contrib"></tbody></table></section>
+</aside></main><div id="tip"></div>
+<script>
+const $=id=>document.getElementById(id),AMB=[31,111,74],CY=[9,54,38],BG=[238,245,240];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const S={info:null,tr:null,view:'edited',pos:0,target:null,foil:null,mat:null,mode:'lit',matName:null,track:null};
+const mix=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));const css=c=>`rgb(${c})`;
+const show=t=>t.replace(/\n/g,'⏎').replace(/^ /,'·');const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function status(m,c=''){const s=$('status');s.textContent=m;s.className=c}
+async function api(path,body){status('Working','busy');const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});const j=await r.json();if(!r.ok){status(j.error,'err');throw new Error(j.error)}status(S.info?modelLine():'Ready');return j}
+const modelLine=()=>`${S.info.model.split('/').pop()}  ${S.info.layers} layers  ${(S.info.params/1e9).toFixed(2)} B parameters  ${S.info.device}`;
+const guard=f=>async(...a)=>{try{await f(...a)}catch(e){if(!$('status').classList.contains('err'))status(e.message,'err')}};
+function setInfo(i){S.info=i;status(modelLine());$('stackbox').hidden=!i.edits.length;renderStack();renderPins();initControls(i)}
+const b2=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+function fit(c,w,h){const d=devicePixelRatio||1;c.width=w*d;c.height=h*d;c.style.width=w+'px';c.style.height=h+'px';const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);return x}
+const curRun=()=>S.tr&&(S.view==='edited'&&S.tr.edited?S.tr.edited:S.tr.base);
+// ---------- layer trace ----------
+const G={gut:112,rh:21,top:0};
+function drawGrid(p=1){const tr=S.tr;if(!tr)return;const n=tr.tokens.length,L=tr.base.length,w=$('gridwrap').clientWidth-2,cw=(w-G.gut)/L,h=G.top+n*G.rh+2,x=fit($('grid'),w,h);G.cw=cw;
+ x.font='10.5px "SF Mono",Menlo,monospace';x.textBaseline='middle';const run=curRun();
+ const ax=fit($('axis'),w,16);ax.font=x.font;ax.textBaseline='middle';ax.textAlign='center';ax.fillStyle='#55675c';ax.textAlign='right';ax.fillText('layer',G.gut-8,8);ax.textAlign='center';for(let l=0;l<L;l+=L>16?2:1)ax.fillText(l,G.gut+cw*(l+.5),8);
+ for(let r=0;r<n;r++){const y=G.top+r*G.rh,sel=r===S.pos,isAns=r>=tr.n_prompt;
+  if(sel){x.fillStyle='#dcebe2';x.fillRect(0,y,w,G.rh)}x.textAlign='right';x.fillStyle=sel?'#17261e':isAns?'#1f6f4a':'#55675c';x.fillText(show(tr.tokens[r]).slice(0,17),G.gut-8,y+G.rh/2);
+  for(let l=0;l<L;l++){if((l+1)/L>p+1e-6)break;const t=run[l][r][0],c=mix(BG,AMB,Math.pow(t[1],.6));x.fillStyle=css(c);x.fillRect(G.gut+l*cw+.5,y+.5,cw-1,G.rh-1);
+   if(cw>=20){x.save();x.beginPath();x.rect(G.gut+l*cw+2,y,cw-4,G.rh);x.clip();x.textAlign='left';x.fillStyle=t[1]>.8?'#fff':'#17261e';x.fillText(show(t[0]),G.gut+l*cw+3,y+G.rh/2);x.restore()}
+   if(run===tr.edited&&tr.base[l][r][0][2]!==t[2]){x.strokeStyle='#0b4a34';x.lineWidth=1.5;x.strokeRect(G.gut+l*cw+1.5,y+1.5,cw-3,G.rh-3)}}
+  if(sel){x.strokeStyle='#17261e';x.lineWidth=1;x.strokeRect(.5,y+.5,w-1,G.rh-1)}}}
+function sweep(){if(reduce)return drawGrid(1);const t0=performance.now();(function f(t){const p=Math.min(1,(t-t0)/850);drawGrid(p);if(p<1)requestAnimationFrame(f)})(t0)}
+function tip(e,html){const t=$('tip');t.innerHTML=html;t.style.display='block';t.style.left=Math.min(e.clientX+14,innerWidth-t.offsetWidth-8)+'px';t.style.top=Math.min(e.clientY+14,innerHeight-t.offsetHeight-8)+'px'}const untip=()=>{$('tip').style.display='none';$('tip').classList.remove('wrap')};
+function setTip(el,t){el.dataset.tip=t;el.setAttribute('aria-label',t)}
+function infoTip(el){const t=$('tip'),r=el.getBoundingClientRect();t.textContent=el.dataset.tip;t.classList.add('wrap');t.style.display='block';t.style.left=Math.max(8,Math.min(r.left,innerWidth-t.offsetWidth-8))+'px';t.style.top=(r.bottom+t.offsetHeight+14>innerHeight?r.top-t.offsetHeight-6:r.bottom+6)+'px'}
+document.querySelectorAll('[data-tip]').forEach(el=>setTip(el,el.dataset.tip));
+document.addEventListener('mouseover',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');if(el)infoTip(el)});
+document.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('[data-tip]'))untip()});
+document.addEventListener('focusin',e=>{if(e.target.dataset&&e.target.dataset.tip)infoTip(e.target)});
+document.addEventListener('focusout',e=>{if(e.target.dataset&&e.target.dataset.tip)untip()});
+const gridHit=e=>{const b=$('grid').getBoundingClientRect(),X=e.clientX-b.left,Y=e.clientY-b.top;return{r:Math.floor((Y-G.top)/G.rh),l:Math.floor((X-G.gut)/G.cw)}};
+$('grid').onmousemove=e=>{if(!S.tr)return;const {r,l}=gridHit(e),L=S.tr.base.length;if(r<0||r>=S.tr.tokens.length||l<0||l>=L)return untip();
+ const row=(run,n)=>`${n}\n`+run[l][r].map(t=>`${(t[1]*100).toFixed(1).padStart(5)}%  ${esc(show(t[0]))}`).join('\n');
+ tip(e,`<b>Layer ${l}, token ${esc(show(S.tr.tokens[r]))}</b>`+row(curRun(),S.view==='edited'&&S.tr.edited?'Edited':'Base')+(S.tr.edited&&S.view==='edited'?'\n'+row(S.tr.base,'Base'):''))};
+$('grid').onmouseleave=untip;$('grid').onclick=guard(async e=>{const {r}=gridHit(e);if(r>=0&&r<S.tr.tokens.length)await select(r)});
+$('grid').onkeydown=guard(async e=>{if(!S.tr)return;const d=e.key==='ArrowUp'?-1:e.key==='ArrowDown'?1:0;if(!d)return;e.preventDefault();await select(Math.max(0,Math.min(S.tr.tokens.length-1,S.pos+d)))});
+// ---------- selection ----------
+async function select(p){S.pos=p;drawGrid(1);drawMap();renderNext();await Promise.all([doTrack(),S.matName?openMatrix(S.matName):0])}
+function renderNext(){const last=curRun();const top=last[last.length-1][S.pos];$('next').innerHTML=top.map((t,i)=>`<tr><td>${esc(show(t[0]))}</td><td>${(t[1]*100).toFixed(1)}%</td><td>${S.pos===S.editPos?`<button class="tiny" data-t="${i}" aria-label="Make ${esc(show(t[0]))} the wanted token">Use</button>`:''}</td></tr>`).join('');
+ $('next').querySelectorAll('button').forEach(b=>b.onclick=guard(async()=>{const t=top[+b.dataset.t];S.target={id:t[2],text:t[0]};$('target').value=t[0];setTab('answer');await doTrack()}))}
+function setCurrent(){const t=S.tr.base.at(-1)[S.editPos][0];S.foil={id:t[2],text:t[0]};$('foil').value=t[0];$('sTok').textContent=show(S.tr.tokens[S.editPos]);$('editPos').value=S.editPos}
+const spaced=v=>!/^\s/.test(v)&&S.tr&&/^\s/.test(S.tr.base.at(-1)[S.editPos][0][0])?' '+v:v;
+const tok=(o,el)=>{const v=$(el).value;if(!v)return null;return o&&o.text===v?{id:o.id}:{text:spaced(v)}};
+const tTarget=()=>tok(S.target,'target'),tFoil=()=>tok(S.foil,'foil');
+async function doTrack(){if(!S.tr)return;const t=tTarget(),f=tFoil();if(!t&&!f)return;S.track=await api('/api/track',t?{target:t,foil:f,pos:S.pos}:{target:f,foil:null,pos:S.pos});drawChart()}
+$('target').onchange=$('foil').onchange=guard(doTrack);
+// ---------- line chart ----------
+function drawChart(){const t=S.track;if(!t)return;const el=$('chart'),W=el.clientWidth,H=178,m={l:38,r:56,t:6,b:22},L=t.base.length;const all=[...t.base,...(t.edited||[])];let lo=Math.min(...all),hi=Math.max(...all);if(t.measure==='probability'){lo=0;hi=Math.max(hi,.05)}else{lo=Math.min(lo,0);hi=Math.max(hi,0)}const pad=(hi-lo)*.06||1;if(t.measure!=='probability'){lo-=pad}hi+=pad;
+ const X=l=>m.l+(W-m.l-m.r)*l/(L-1),Y=v=>m.t+(H-m.t-m.b)*(1-(v-lo)/(hi-lo));const path=a=>a.map((v,i)=>`${i?'L':'M'}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join('');
+ const ticks=[lo,(lo+hi)/2,hi];let s=`<svg width="${W}" height="${H}" role="img" aria-label="${esc(t.measure)} by layer">`;
+ ticks.forEach(v=>{s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#dfe8e2"/><text x="${m.l-6}" y="${Y(v)+4}" fill="#55675c" font-size="11" text-anchor="end" font-family="Menlo">${v.toFixed(Math.abs(hi-lo)<2?2:1)}</text>`});
+ if(t.measure!=='probability'&&lo<0&&hi>0)s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(0)}" y2="${Y(0)}" stroke="#55675c" stroke-dasharray="1 3"/>`;
+ for(let l=0;l<L;l+=L>16?4:2)s+=`<text x="${X(l)}" y="${H-6}" fill="#55675c" font-size="11" text-anchor="middle" font-family="Menlo">${l}</text>`;
+ s+=`<path d="${path(t.base)}" fill="none" stroke="#7c8a82" stroke-width="2"${t.edited?' stroke-dasharray="5 3"':''}/>`;
+ s+=`<text x="${W-m.r+5}" y="${Y(t.base[L-1])+4}" fill="#55675c" font-size="12">Base</text>`;
+ if(t.edited){s+=`<path d="${path(t.edited)}" fill="none" stroke="#1f6f4a" stroke-width="2"/><text x="${W-m.r+5}" y="${Y(t.edited[L-1])+4+(Math.abs(Y(t.edited[L-1])-Y(t.base[L-1]))<13?12:0)}" fill="#17261e" font-size="12">Edited</text>`}
+ s+=`<line id="cross" y1="${m.t}" y2="${H-m.b}" stroke="#17261e" opacity="0"/><rect x="${m.l}" y="0" width="${W-m.l-m.r}" height="${H}" fill="transparent" id="hit"/></svg>`;el.innerHTML=s;
+ $('charttitle').textContent=(t.foil!==null?'Logit difference: ':'Probability: ')+show(t.target)+(t.foil!==null?' − '+show(t.foil):'');
+ $('legend').innerHTML=(t.edited?`<span><i class="key d" style="border-color:#7c8a82"></i>Base</span><span><i class="key" style="border-color:#1f6f4a"></i>Edited</span>`:'');
+ $('hit').onmousemove=e=>{const b=$('hit').getBoundingClientRect(),l=Math.max(0,Math.min(L-1,Math.round((e.clientX-b.left)/b.width*(L-1))));const c=$('cross');c.setAttribute('x1',X(l));c.setAttribute('x2',X(l));c.setAttribute('opacity',.6);tip(e,`<b>Layer ${l}</b>Base   ${t.base[l].toFixed(3)}`+(t.edited?`\nEdited ${t.edited[l].toFixed(3)}`:''))};
+ $('hit').onmouseleave=()=>{untip();$('cross').setAttribute('opacity',0)}}
+// ---------- model map ----------
+const M={gut:92,rh:0,top:2};
+function drawMap(){const tr=S.tr;if(!tr)return;const c=$('map'),w=c.parentElement.clientWidth,k=tr.kinds,L=tr.base.length,h=178;M.rh=(h-M.top-16)/k.length;M.cw=(w-M.gut)/L;const x=fit(c,w,h);x.font='11px "SF Mono",Menlo,monospace';x.textBaseline='middle';
+ k.forEach((kind,r)=>{const col=tr.activity[kind],vals=col.map(a=>a?a[S.pos]:0),mx=Math.max(...vals,1e-9),y=M.top+r*M.rh;x.textAlign='right';x.fillStyle='#55675c';x.fillText(kind.split('.').pop().slice(0,11),M.gut-7,y+M.rh/2);
+  vals.forEach((v,l)=>{const name=matAt(kind,l);if(!name)return;x.fillStyle=css(mix(BG,AMB,Math.pow(v/mx,1.5)));x.fillRect(M.gut+l*M.cw+.5,y+.5,M.cw-1,M.rh-1);const m=S.info.matrices.find(a=>a.name===name);
+   if(m.edited){x.strokeStyle='#0b4a34';x.lineWidth=2;x.strokeRect(M.gut+l*M.cw+1.5,y+1.5,M.cw-3,M.rh-3)}if(name===S.matName){x.strokeStyle='#17261e';x.lineWidth=1.5;x.strokeRect(M.gut+l*M.cw+1,y+1,M.cw-2,M.rh-2)}})});
+ x.textAlign='center';x.fillStyle='#55675c';for(let l=0;l<L;l+=L>16?4:2)x.fillText(l,M.gut+M.cw*(l+.5),h-7)}
+const matAt=(kind,l)=>(S.info.matrices.find(m=>m.kind===kind&&m.layer===l)||{}).name;
+const mapHit=e=>{const b=$('map').getBoundingClientRect();const r=Math.floor((e.clientY-b.top-M.top)/M.rh),l=Math.floor((e.clientX-b.left-M.gut)/M.cw);return S.tr&&r>=0&&r<S.tr.kinds.length&&l>=0&&l<S.info.layers?{kind:S.tr.kinds[r],l}:null};
+$('map').onmousemove=e=>{const h=mapHit(e);if(!h)return untip();const a=S.tr.activity[h.kind][h.l];tip(e,`<b>Layer ${h.l}, ${esc(h.kind)}</b>output size ${a?a[S.pos].toFixed(2):'not captured'}`)};$('map').onmouseleave=untip;
+$('map').onclick=guard(async e=>{const h=mapHit(e);if(h){const n=matAt(h.kind,h.l);if(n){if([...$('kind').options].some(o=>o.value===h.kind)){$('kind').value=h.kind;$('layer').value=h.l;syncV()}await openMatrix(n,true)}}});
+// ---------- matrix ----------
+const MX={gut:12,w:0,h:0};
+async function openMatrix(name,anim){S.matName=name;S.mat=await api('/api/matrix',{name,pos:S.pos});drawMap();$('editbox').hidden=false;$('scaleName').textContent=name;$('matname').textContent=`${name}  ${S.mat.rows} × ${S.mat.cols}`;renderMatrix(anim)}
+function renderMatrix(anim){const a=S.mat;if(!a)return;const c=$('matrix'),W=c.parentElement.clientWidth;const iw=W-MX.gut-2,ih=Math.round(Math.min(330,Math.max(170,iw*a.rows/a.cols)));MX.w=iw;MX.h=ih;
+ const w=b2(a.weights),lit=a.lit&&b2(a.lit),d=a.delta&&b2(a.delta),dl=a.delta_lit&&b2(a.delta_lit);const off=new OffscreenCanvas(a.width,a.height),o=off.getContext('2d'),im=o.createImageData(a.width,a.height);
+ for(let i=0;i<w.length;i++){let col;if(S.mode==='weights'||(S.mode==='lit'&&!lit)){const v=w[i]/255;col=mix(BG,[34,66,50],Math.pow(v,1.25))}else if(S.mode==='lit'){col=mix(BG,AMB,Math.pow(lit[i]/255,.8));if(dl){const t=Math.pow(dl[i]/255,.9);col=mix(col,CY,t*.85)}}else{const v=d?d[i]/255:0;col=mix(mix(BG,[34,66,50],Math.pow(w[i]/255,1.25)*.28),CY,Math.pow(v,.8))}im.data.set([...col,255],i*4)}
+ o.putImageData(im,0,0);
+ const draw=p=>{const x=fit(c,W,ih+MX.gut+2);x.imageSmoothingEnabled=false;x.save();x.beginPath();x.rect(MX.gut,MX.gut,iw*p,ih);x.clip();x.drawImage(off,MX.gut,MX.gut,iw,ih);x.restore();
+  if(a.x_strip){const s=b2(a.x_strip);for(let i=0;i<s.length;i++){x.fillStyle=css(mix(BG,AMB,s[i]/255));x.fillRect(MX.gut+i*iw/s.length,0,iw/s.length+.5,9)}const r=b2(a.y_strip);for(let i=0;i<r.length;i++){x.fillStyle=css(mix(BG,AMB,r[i]/255));x.fillRect(0,MX.gut+i*ih/r.length,9,ih/r.length+.5)}}
+  if(drag&&drag.done!==false){x.strokeStyle='#17261e';x.lineWidth=1;x.strokeRect(Math.min(drag.x0,drag.x1),Math.min(drag.y0,drag.y1),Math.abs(drag.x1-drag.x0),Math.abs(drag.y1-drag.y0))}};
+ MX.redraw=()=>draw(1);if(anim&&!reduce){const t0=performance.now();(function f(t){const p=Math.min(1,(t-t0)/450);draw(p);if(p<1)requestAnimationFrame(f)})(t0)}else draw(1);
+ setTip($('matinfo'),`Weights shows the size of each entry. Lit shows each entry multiplied by its input for the selected token. Edit shows what the edits changed. Each block on the screen is the mean of ${Math.round(a.row_pool)} × ${Math.round(a.col_pool)} entries. The Frobenius norm of this matrix is ${a.frobenius.toFixed(2)}.`+(a.delta_frobenius!==undefined?` The Frobenius norm of the change is ${a.delta_frobenius.toFixed(2)}.`:'')+(a.x_strip?' The strip at the top shows the size of the input, and the strip at the left shows the size of the output.':''));
+ $('contribbox').hidden=!a.top;if(a.top)$('contrib').innerHTML=a.top.map(t=>`<tr><td>${t.row}, ${t.col}</td><td>${t.w.toFixed(3)}</td><td>${t.x.toFixed(3)}</td><td>${t.wx.toFixed(3)}</td></tr>`).join('')}
+let drag=null;const mxp=e=>{const b=$('matrix').getBoundingClientRect();return[Math.max(MX.gut,Math.min(MX.gut+MX.w,e.clientX-b.left)),Math.max(MX.gut,Math.min(MX.gut+MX.h,e.clientY-b.top))]};
+const blockAt=(X,Y)=>{const a=S.mat;return{col:Math.min(a.cols-1,Math.floor((X-MX.gut)/MX.w*a.cols)),row:Math.min(a.rows-1,Math.floor((Y-MX.gut)/MX.h*a.rows))}};
+$('matrix').onpointerdown=e=>{if(!S.mat)return;const[X,Y]=mxp(e);drag={x0:X,y0:Y,x1:X,y1:Y};$('matrix').setPointerCapture(e.pointerId)};
+$('matrix').onpointermove=e=>{if(!S.mat)return;const[X,Y]=mxp(e);if(drag){drag.x1=X;drag.y1=Y;MX.redraw()}const b=blockAt(X,Y);tip(e,`row ${b.row}, column ${b.col}`)};$('matrix').onpointerleave=untip;
+$('matrix').onpointerup=e=>{if(!drag)return;const A=blockAt(Math.min(drag.x0,drag.x1),Math.min(drag.y0,drag.y1)),B=blockAt(Math.max(drag.x0,drag.x1),Math.max(drag.y0,drag.y1));if(Math.abs(drag.x1-drag.x0)>3&&Math.abs(drag.y1-drag.y0)>3){setTab('matrix');$('rows').value=`${A.row}:${B.row+1}`;$('cols').value=`${A.col}:${B.col+1}`}else drag=null;MX.redraw()};
+function seg(id,cb){$(id).querySelectorAll('button').forEach(b=>b.onclick=()=>{$(id).querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));cb(b.dataset.v)})}
+seg('matseg',v=>{S.mode=v;renderMatrix(true)});seg('runseg',v=>{S.view=v;sweep();drawMap();renderNext()});
+// ---------- edits ----------
+function setTab(t){document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));document.querySelectorAll('[data-panel]').forEach(d=>d.hidden=d.dataset.panel!==t);if(t==='ai')aiOpen()}
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=guard(async()=>setTab(b.dataset.tab)));
+const syncV=()=>{$('layerV').textContent=$('layer').value;$('alphaV').textContent=(+$('alpha').value).toFixed(1)};$('alpha').oninput=$('layer').oninput=syncV;$('editPos').onchange=guard(async()=>{S.editPos=+$('editPos').value;setCurrent();await select(S.editPos)});
+const openPlace=async()=>{const n=matAt($('kind').value,+$('layer').value);if(n)await openMatrix(n,true)};$('layer').onchange=$('kind').onchange=guard(openPlace);
+function initControls(i){if(i.head_width)setTip($('scaleTip'),$('scaleTip').dataset.tip.split(' One attention')[0]+` One attention head is ${i.head_width} columns wide on an attention output matrix.`);if(S.inited===i.model)return;S.inited=i.model;
+ const rank=k=>/down_proj|fc2|mlp.*(c_proj|out)/.test(k)?0:/o_proj|out_proj/.test(k)?1:/[qkv]_proj/.test(k)?3:2;
+ const kinds=[...new Set(i.matrices.filter(m=>m.rows===i.hidden).map(m=>m.kind))].sort((a,b)=>rank(a)-rank(b));$('kind').innerHTML=kinds.map(k=>`<option>${esc(k)}</option>`).join('');$('layer').max=i.layers-1;$('layer').value=Math.round(i.layers*.75);syncV()}
+function renderStack(){const i=S.info;$('stack').innerHTML=i.edits.map(e=>`<div class="edit"><input type="checkbox" ${e.on?'checked':''} data-id="${e.id}" aria-label="Turn edit on or off"><div><p>${esc(e.label)}</p><small>${esc(e.stats.module)}</small></div><button type="button" class="i" data-tip="${esc(`This edit changes ${e.stats.changed} entries. The Frobenius norm of the change is ${e.stats.frobenius.toFixed(3)}${e.stats.base_frobenius?', and the norm of the original matrix is '+e.stats.base_frobenius.toFixed(1):''}. The largest change to one entry is ${e.stats.max_entry.toFixed(4)}.${e.stats.write_at_position!=null?' At the selected token the edit writes a vector of size '+e.stats.write_at_position.toFixed(2)+'.':''}`)}">i</button><button class="tiny" data-rm="${e.id}" aria-label="Remove edit">Remove</button></div>`).join('')+'';
+ if(i.residual!=null)setTip($('stacktip'),`Clear a checkbox to turn an edit off. Press Remove to delete it. Save writes the active edits to a file that you can load again. After the last removal, the weights differed from the original weights by ${i.residual}.`);
+ $('stack').querySelectorAll('input').forEach(b=>b.onchange=guard(()=>act('/api/toggle',{id:+b.dataset.id,on:b.checked})));$('stack').querySelectorAll('[data-rm]').forEach(b=>b.onclick=guard(()=>act('/api/remove',{id:+b.dataset.rm})))}
+function renderPins(){const i=S.info;$('pins').innerHTML=i.pins.map(p=>`<span class="chip"><b>${p.group}</b>${esc(p.label)}<button data-id="${p.id}" aria-label="Remove pin">×</button></span>`).join('');$('pins').querySelectorAll('button').forEach(b=>b.onclick=guard(async()=>{setInfo((await api('/api/unpin',{id:+b.dataset.id})).info)}))}
+$('pinA').onclick=guard(async()=>setInfo((await api('/api/pin',{group:'A',pos:S.pos})).info));$('pinB').onclick=guard(async()=>setInfo((await api('/api/pin',{group:'B',pos:S.pos})).info));
+async function act(path,body){const t=await api(path,body);setTrace(t,false);await after()}
+async function after(){await doTrack();if(S.matName)await openMatrix(S.matName,true)}
+function setTrace(t,fresh){if(!t.tokens){setInfo(t.info);return}S.tr=t;setInfo(t.info);$('empty').hidden=true;$('runseg').hidden=!t.edited;if(fresh){S.pos=S.editPos=t.n_prompt-1;$('editPos').innerHTML=t.tokens.slice(0,t.n_prompt).map((x,i)=>`<option value="${i}">${i}: ${esc(show(x))}</option>`).join('')}S.pos=Math.min(S.pos,t.tokens.length-1);
+ $('answers').hidden=$('nextbox').hidden=false;
+ $('ans').innerHTML=`<p class="answer"><small>Base</small>${esc(t.answer_base||'(empty)')}</p>`+(t.answer_edited!==null?`<p class="answer e"><small>Edited</small>${esc(t.answer_edited||'(empty)')}</p>`:'');sweep();drawMap();renderNext()}
+async function writeAnswer(){if(!S.tr)throw new Error('Trace a prompt first.');if(!$('target').value)throw new Error('Enter the word that the model must say.');const module=matAt($('kind').value,+$('layer').value);if(!module)throw new Error('This layer has no matrix of that type.');
+ if(S.lastTry!=null&&S.info.edits.some(e=>e.id===S.lastTry))await api('/api/remove',{id:S.lastTry});S.matName=module;S.pos=S.editPos;
+ await act('/api/edit',{op:'rank_one',module,pos:S.editPos,alpha:+$('alpha').value,key:$('key').value,target:tTarget(),foil:tFoil()});S.lastTry=S.info.edits.at(-1).id}
+$('applyAnswer').onclick=guard(async()=>{if(S.writing)return;S.writing=true;try{await writeAnswer()}finally{S.writing=false}});
+$('applyScale').onclick=guard(async()=>{if(!S.matName)throw new Error('Open a matrix first.');drag=null;await act('/api/edit',{op:'scale',module:S.matName,pos:S.pos,rows:$('rows').value,cols:$('cols').value,factor:+$('factor').value})});
+$('applyDir').onclick=guard(async()=>{if(!S.matName)throw new Error('Open a matrix first.');await act('/api/edit',{op:'remove_direction',module:S.matName,pos:S.pos,strength:+$('strength').value,source:$('source').value,target:tTarget(),foil:tFoil()})});
+// ---------- AI ----------
+const AI={set:null,local:{},stop:false,proposal:null};
+async function aiGet(path){const r=await fetch(path),j=await r.json();if(!r.ok){status(j.error,'err');throw new Error(j.error)}return j}
+const aiSave=async b=>{AI.set=await api('/api/ai/settings',b);renderAI()};
+async function aiOpen(){try{[AI.set,AI.local]=await Promise.all([aiGet('/api/ai/settings'),aiGet('/api/ai/local')]);renderAI()}catch(e){}if(!$('aiGoal').value&&$('target').value)$('aiGoal').value=`Make the model say ${$('target').value.trim()} instead of ${$('foil').value.trim()}.`}
+function renderAI(){const a=AI.set,p=a.presets.find(x=>x.id===a.provider);$('aiProv').innerHTML=a.presets.map(x=>`<option value="${x.id}" ${x.id===a.provider?'selected':''}>${esc(x.name)}${AI.local[x.id]&&AI.local[x.id].running?' · running':''}</option>`).join('');
+ $('aiKeyRow').hidden=!p.needsKey&&p.id!=='custom';$('aiKey').value='';$('aiKey').placeholder=a.hasKey[p.id]?'Saved':'Paste the key';$('aiUrlRow').hidden=$('aiWireRow').hidden=p.id!=='custom';$('aiUrl').value=a.endpoints[p.id]||'';$('aiWire').value=a.wire;
+ $('aiModel').value=a.models[p.id]||p.model||'';$('aiModels').innerHTML=((AI.local[p.id]||{}).models||[]).map(m=>`<option value="${esc(m)}">`).join('')}
+$('aiProv').onchange=guard(()=>aiSave({provider:$('aiProv').value}));$('aiKey').onchange=guard(()=>aiSave({key:$('aiKey').value}));$('aiModel').onchange=guard(()=>aiSave({model:$('aiModel').value}));$('aiUrl').onchange=guard(()=>aiSave({endpoint:$('aiUrl').value}));$('aiWire').onchange=guard(()=>aiSave({wire:$('aiWire').value}));
+const aiState=()=>{const t=S.tr,run=curRun();return{prompt:$('prompt').value,tokens:t.tokens.slice(0,t.n_prompt).map((x,i)=>[i,x]),selected_position:S.editPos,answer_base:t.answer_base,answer_edited:t.answer_edited,top_prediction_by_layer_at_selection:run.map((l,i)=>[i,l[S.editPos][0][0],+l[S.editPos][0][1].toFixed(3)]),next_tokens:run.at(-1)[S.editPos].map(x=>[x[0],+x[1].toFixed(3)]),layers:S.info.layers,components:S.tr.kinds,edits:S.info.edits.map(e=>({id:e.id,label:e.label,module:e.stats.module}))}};
+const aiName=a=>matAt(a.component,a.layer);
+async function aiDo(a){try{if(a.action==='remove_edit'){await act('/api/remove',{id:a.id})}else{const module=aiName(a);if(!module)throw new Error(`No matrix ${a.component} at layer ${a.layer}.`);S.matName=module;
+  if(a.action==='rank_one'){await act('/api/edit',{op:'rank_one',module,pos:a.position,alpha:a.alpha,key:'position',target:{text:a.target},foil:{text:a.foil}});if([...$('kind').options].some(o=>o.value===a.component)){$('kind').value=a.component;$('layer').value=a.layer;syncV()}}
+  else await act('/api/edit',{op:'scale',module,pos:S.pos,rows:a.rows,cols:a.cols,factor:a.factor})}
+ return{answer_edited:S.tr.answer_edited,edits:S.info.edits.map(e=>({id:e.id,label:e.label}))}}catch(e){return{error:e.message}}}
+function aiLog(a,res){const li=document.createElement('li');const text=a.action==='finish'?a.summary:a.why;const detail=a.action==='rank_one'?`layer ${a.layer} ${a.component}, α ${a.alpha}, ${JSON.stringify(a.foil)} to ${JSON.stringify(a.target)}`:a.action==='scale'?`layer ${a.layer} ${a.component}, rows ${a.rows||'all'}, columns ${a.cols||'all'}, factor ${a.factor}`:a.action==='remove_edit'?`remove edit ${a.id}`:(a.success?'goal reached':'goal not reached');li.innerHTML=`${esc(text)}<code>${esc(detail)}</code>`+(res?`<code>${esc(res.error?'Error: '+res.error:(res.answer_edited===null?'No edit is active.':'Answer: '+res.answer_edited.slice(0,90)))}</code>`:'');$('aiLog').append(li)}
+$('aiGo').onclick=guard(async()=>{if(!S.tr)throw new Error('Trace a prompt first.');const goal=$('aiGoal').value.trim();if(!goal)throw new Error('Enter a goal.');AI.stop=false;$('aiLog').innerHTML='';$('aiApply').hidden=true;$('aiGo').disabled=true;const write=$('aiWrite').checked,history=[];
+ try{for(let i=0;i<+$('aiSteps').value&&!AI.stop;i++){const{action:a}=await api('/api/ai/step',{goal,state:aiState(),history,write});if(a.action==='finish'){aiLog(a);break}if(!write){aiLog(a);AI.proposal=a;$('aiApply').hidden=false;break}const res=await aiDo(a);aiLog(a,res);history.push({action:a,result:res})}}finally{$('aiGo').disabled=false}});
+$('aiStop').onclick=()=>{AI.stop=true};$('aiApply').onclick=guard(async()=>{const r=await aiDo(AI.proposal);aiLog(AI.proposal,r);$('aiApply').hidden=true});
+$('save').onclick=guard(async()=>{const r=await api('/api/export',{name:$('savename').value});$('saved').textContent=`Saved ${r.path}`});$('load2').onclick=guard(()=>act('/api/import',{path:$('imp').value}));
+$('trace').onclick=guard(async()=>{const t=await api('/api/trace',{prompt:$('prompt').value,chat:$('chat').checked});setTrace(t,true);S.target=null;$('target').value='';setCurrent();await doTrack();await openPlace();$('gridwrap').scrollTop=Math.max(0,G.top+S.pos*G.rh-$('gridwrap').clientHeight*.55)});
+$('load').onclick=guard(async()=>{const j=await api('/api/load',{path:$('path').value});S.tr=null;S.matName=null;setInfo(j.info)});
+addEventListener('resize',()=>{drawGrid(1);drawMap();drawChart();renderMatrix()});
+fetch('/api/state').then(r=>r.json()).then(j=>{if(j.suggest)$('path').value=j.suggest;if(j.info)setInfo(j.info)});
+</script></body></html>
