@@ -83,7 +83,13 @@ class Engine:
     @classmethod
     def load(cls, path, device=None):
         from transformers import AutoModelForCausalLM, AutoTokenizer
-        if not os.path.isdir(path): raise BenchError(f"Folder not found: {path}")
+        if not os.path.isdir(path):
+            # A Hugging Face model id, for example Qwen/Qwen2.5-0.5B-Instruct. Download it once into ENGRAM_HOME/hf.
+            if not re.fullmatch(r"[\w.-]+/[\w.-]+", path): raise BenchError(f"Folder not found: {path}")
+            from huggingface_hub import snapshot_download
+            home = os.environ.get("ENGRAM_HOME") or os.path.expanduser("~/.engram")
+            try: path = snapshot_download(path, cache_dir=os.path.join(home, "hf"), allow_patterns=["*.json", "*.safetensors", "*.model", "*.txt", "*.tiktoken"])
+            except Exception as err: raise BenchError(f"Could not download {path}: {err}")
         device = pick_device(device); torch.set_num_threads(2)
         tok = AutoTokenizer.from_pretrained(path)
         model = AutoModelForCausalLM.from_pretrained(path, dtype=torch.float32).to(device)

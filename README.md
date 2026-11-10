@@ -32,7 +32,7 @@ The interface has four figures and one table.
 
 ## 2. Installation
 
-Engram needs Python with `torch`, `transformers`, and `safetensors`. The AI tab also needs [Bun](https://bun.sh).
+Engram needs Python with `torch`, `transformers`, and `safetensors`. The AI tab also needs Node.js or [Bun](https://bun.sh).
 
     pip install torch transformers safetensors
     cd ai && bun install && cd ..
@@ -59,7 +59,17 @@ The AI loop has been tested only against a scripted stand-in server, in the Open
 
 ## 5. Desktop application
 
-The folder `electron/` builds a macOS application. The application starts `server.py` with a Python that you choose, and it stores the choice in `~/.engram/app.json`. Add the key `model` to that file to load a model when the application starts. The application uses port 7860 by default, and the Port field at the top of its window changes the port.
+The folder `electron/` builds installers for macOS (DMG, Apple silicon and Intel) and Windows (EXE, x64). On first launch, the application offers to install Python 3.12, PyTorch, and Transformers in `~/.engram/runtime` with a bundled copy of [uv](https://github.com/astral-sh/uv). You can also choose a Python that you already have. The application stores its settings in `~/.engram/app.json`. The Model field accepts a Hugging Face model id or a local folder. The application uses port 7860 by default, and the Port field at the top of its window changes the port.
+
+```sh
+cd electron
+bun install
+./fetch-uv.sh
+bun run dist:mac   # dist/Engram-<version>-mac-arm64.dmg and -mac-x64.dmg
+bun run dist:win   # dist/Engram-<version>-win-x64.exe
+```
+
+The installers are not signed. On macOS, right-click Engram.app and click Open the first time. On Windows, click More info, then Run anyway, in the SmartScreen dialog.
 
     cd ai && bun install && cd ../electron
     bun install && bun pm trust electron

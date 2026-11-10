@@ -31,15 +31,20 @@ def route(path, b):
 
 AI = {"port": None}
 def start_ai():
-    folder = os.path.join(HERE, "ai"); bun = shutil.which("bun") or os.path.expanduser("~/.bun/bin/bun")
-    if not os.path.exists(os.path.join(folder, "node_modules")) or not os.path.exists(bun): return
+    folder = os.path.join(HERE, "ai")
+    # The desktop app passes its own Node runtime in ENGRAM_NODE. Otherwise use node or bun from PATH.
+    js = os.environ.get("ENGRAM_NODE") or shutil.which("node") or shutil.which("bun") or os.path.expanduser("~/.bun/bin/bun")
+    # The desktop build ships sidecar.bundle.mjs, which contains its dependencies.
+    script = "sidecar.bundle.mjs" if os.path.exists(os.path.join(folder, "sidecar.bundle.mjs")) else "sidecar.mjs"
+    if script == "sidecar.mjs" and not os.path.exists(os.path.join(folder, "node_modules")): return
+    if not os.path.exists(js): return
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0)); AI["port"] = sock.getsockname()[1]
-    proc = subprocess.Popen([bun, "sidecar.mjs"], cwd=folder, env={**os.environ, "PORT": str(AI["port"])})
+    proc = subprocess.Popen([js, script], cwd=folder, env={**os.environ, "PORT": str(AI["port"])})
     atexit.register(proc.terminate)
 
 def ai_call(path, data=None):
-    if AI["port"] is None: raise BenchError(f"The AI process is not running. Run bun install in {os.path.join(HERE, 'ai')} and restart the server.")
+    if AI["port"] is None: raise BenchError(f"The AI process is not running. Run npm install in {os.path.join(HERE, 'ai')} and restart the server.")
     req = urllib.request.Request(f"http://127.0.0.1:{AI['port']}{path}", data=data, headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=240) as r: return r.status, r.read()

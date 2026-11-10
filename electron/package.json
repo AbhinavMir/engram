@@ -2,9 +2,79 @@
   "name": "engram",
   "productName": "Engram",
   "version": "0.1.0",
+  "description": "Read and write the weights of a language model",
+  "author": "Abhinav Srivastava",
   "private": true,
   "main": "main.js",
+  "scripts": {
+    "bundle-ai": "bun build ../ai/sidecar.mjs --target=node --format=esm --outfile=build-ai/sidecar.bundle.mjs",
+    "dist:mac": "bun run bundle-ai && electron-builder --mac dmg --arm64 --x64",
+    "dist:win": "bun run bundle-ai && electron-builder --win nsis --x64"
+  },
   "devDependencies": {
-    "electron": "^45.2.3"
+    "electron": "^45.2.3",
+    "electron-builder": "^26"
+  },
+  "build": {
+    "appId": "dev.engram.app",
+    "productName": "Engram",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../server.py",
+        "to": "engram/server.py"
+      },
+      {
+        "from": "../engine.py",
+        "to": "engram/engine.py"
+      },
+      {
+        "from": "../index.html",
+        "to": "engram/index.html"
+      },
+      {
+        "from": "../docs/logo.png",
+        "to": "engram/docs/logo.png"
+      },
+      {
+        "from": "build-ai/sidecar.bundle.mjs",
+        "to": "engram/ai/sidecar.bundle.mjs"
+      },
+      {
+        "from": "bin/${os}-${arch}",
+        "to": "bin"
+      }
+    ],
+    "artifactName": "Engram-${version}-${os}-${arch}.${ext}",
+    "mac": {
+      "icon": "icon.icns",
+      "category": "public.app-category.developer-tools",
+      "identity": null,
+      "target": [
+        "dmg"
+      ]
+    },
+    "dmg": {
+      "title": "Engram"
+    },
+    "win": {
+      "icon": "icon.png",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "shortcutName": "Engram"
+    }
   }
 }

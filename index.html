@@ -57,7 +57,7 @@ button.go.busy::after,button.apply.busy::after{border-color:rgba(255,255,255,.35
 .brand{display:flex;align-items:center;gap:7px}
 </style></head><body>
 <header><h1 class="brand"><img src="/logo.png" alt="" width="30" height="30">Engram</h1>
-<div class="row"><input id="path" aria-label="Local model folder" placeholder="Absolute path to a Hugging Face model folder" spellcheck="false"><button id="load">Load</button><button type="button" class="i" id="modelinfo" data-tip="No model is loaded.">i</button></div>
+<div class="row"><input id="path" aria-label="Model" placeholder="Hugging Face model id or local model folder" spellcheck="false"><button id="load">Load</button><button type="button" class="i" id="modelinfo" data-tip="No model is loaded.">i</button></div>
 <span id="spin" class="ring" hidden aria-hidden="true"></span><label id="portBox" hidden>Port<input id="port" type="number" min="1024" max="65535"></label></header>
 <main>
 <aside id="left">
@@ -276,5 +276,5 @@ $('load').onclick=guard(async()=>{const j=await api('/api/load',{path:$('path').
 addEventListener('resize',()=>{drawGrid(1);drawMap();drawChart();renderMatrix()});
 if(window.engramDesktop){engramDesktop.getPort().then(p=>{$('port').value=p;$('portBox').hidden=false;$('port').onchange=guard(async()=>{const n=+$('port').value,r=await engramDesktop.setPort(n);if(r.error){$('port').value=p;throw new Error(r.error)}})})}
 else if(!sessionStorage.getItem('deskClosed')){$('desk').hidden=false;$('deskClose').onclick=()=>{sessionStorage.setItem('deskClosed','1');$('desk').hidden=true}}
-fetch('/api/state').then(r=>r.json()).then(j=>{if(j.suggest)$('path').value=j.suggest;if(j.info)setInfo(j.info)});
+fetch('/api/state').then(r=>r.json()).then(j=>{$('path').value=j.suggest||'Qwen/Qwen2.5-0.5B-Instruct';if(j.info)setInfo(j.info)});
 </script></body></html>

@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { createServer } from 'node:http'
 
 const DIR = process.env.ENGRAM_HOME || join(homedir(), '.engram')
 const SETTINGS = join(DIR, 'ai.json'), KEYS = join(DIR, 'credentials.json')
@@ -114,18 +115,20 @@ function save(b) {
   return publicSettings()
 }
 
-Bun.serve({
-  hostname: '127.0.0.1', port: Number(process.env.PORT), idleTimeout: 255,
-  async fetch(req) {
-    const path = new URL(req.url).pathname
-    try {
-      let out
-      if (path === '/settings' && req.method === 'GET') out = publicSettings()
-      else if (path === '/settings') out = save(await req.json())
-      else if (path === '/local') out = await local()
-      else if (path === '/step') out = await step(await req.json())
-      else return Response.json({ error: 'Unknown route.' }, { status: 404 })
-      return Response.json(out)
-    } catch (err) { return Response.json({ error: err.message || String(err) }, { status: 400 }) }
-  },
+const send = (res, status, body) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(body)) }
+const body = req => new Promise((ok, fail) => { let d = ''; req.on('data', c => d += c); req.on('end', () => { try { ok(d ? JSON.parse(d) : {}) } catch (e) { fail(e) } }); req.on('error', fail) })
+
+const server = createServer(async (req, res) => {
+  const path = new URL(req.url, 'http://127.0.0.1').pathname
+  try {
+    let out
+    if (path === '/settings' && req.method === 'GET') out = publicSettings()
+    else if (path === '/settings') out = save(await body(req))
+    else if (path === '/local') out = await local()
+    else if (path === '/step') out = await step(await body(req))
+    else return send(res, 404, { error: 'Unknown route.' })
+    send(res, 200, out)
+  } catch (err) { send(res, 400, { error: err.message || String(err) }) }
 })
+server.requestTimeout = 0
+server.listen(Number(process.env.PORT), '127.0.0.1')
