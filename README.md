@@ -1,10 +1,8 @@
 # <img src="docs/logo.png" alt="" width="38" align="absmiddle"> Engram
 
-<video src="docs/demo.mp4" poster="docs/demo.jpg" controls width="100%"></video>
 
-[![Engram changes the answer of a language model from Paris to Berlin. Open the video.](docs/demo.gif)](docs/demo.mp4)
+https://github.com/user-attachments/assets/d3a004d5-1b2a-44ed-8956-a4badfd994c5
 
-[Watch the demonstration (MP4)](docs/demo.mp4)
 
 Engram is a local visual instrument for the inspection and direct editing of the weights of Hugging Face transformers. It computes no gradient and runs no training loop. Each edit is a closed-form change to named weight matrices, and each edit is reversible.
 
