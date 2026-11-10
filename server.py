@@ -60,6 +60,8 @@ class H(BaseHTTPRequestHandler):
             return self.send(code, out)
         if self.path == "/":
             return self.send(200, open(os.path.join(HERE, "index.html"), "rb").read(), "text/html; charset=utf-8")
+        if self.path == "/logo.png":
+            return self.send(200, open(os.path.join(HERE, "docs", "logo.png"), "rb").read(), "image/png")
         if self.path == "/api/state":
             e = E["engine"]; return self.send(200, json.dumps(dict(info=e.info() if e else None, suggest=ARGS.model and os.path.abspath(ARGS.model))).encode())
         self.send(404, b"{}")

@@ -1,3 +1,5 @@
+<img src="docs/logo.png" alt="Engram logo" width="96">
+
 # Engram
 
 <video src="docs/demo.mp4" poster="docs/demo.jpg" controls width="100%"></video>
@@ -59,7 +61,7 @@ The AI loop has been tested only against a scripted stand-in server, in the Open
 
 ## 5. Desktop application
 
-The folder `electron/` builds a macOS application. The application starts `server.py` with a Python that you choose, and it stores the choice in `~/.engram/app.json`. Add the key `model` to that file to load a model when the application starts.
+The folder `electron/` builds a macOS application. The application starts `server.py` with a Python that you choose, and it stores the choice in `~/.engram/app.json`. Add the key `model` to that file to load a model when the application starts. The application uses port 7860 by default, and the Port field at the top of its window changes the port.
 
     cd ai && bun install && cd ../electron
     bun install && bun pm trust electron

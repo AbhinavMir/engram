@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Engram</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Engram</title><link rel="icon" type="image/png" href="/logo.png">
 <style>
 :root{--bg:#fff;--raised:#f7faf8;--line:#d9e2dc;--ink:#16211b;--muted:#54635a;--amber:#1f6f4a;--cyan:#0b4a34;--bad:#a4261c;--sans:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;--mono:"SF Mono",Menlo,monospace}
 *{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%;margin:0}
@@ -8,7 +8,8 @@ h1{font:600 22px/1 var(--sans);letter-spacing:-.01em;margin:0}
 h2{font:400 15px/1.25 var(--sans);color:var(--ink);margin:0 0 8px}h2 b{font-weight:700}
 h3{font:400 14px/1.3 var(--sans);margin:0 0 6px;color:var(--muted)}
 header{display:flex;align-items:center;gap:22px;padding:12px 22px 11px;border-bottom:3px double var(--ink)}
-#spin{margin-left:auto}
+#portBox{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}#portBox input{width:82px}
+#desk{position:fixed;left:18px;bottom:18px;z-index:20;width:238px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 20px rgba(22,33,27,.14);padding:11px 13px;font-size:14px}#desk a{color:var(--amber)}#desk div{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
 main{display:grid;grid-template-columns:276px minmax(0,1fr) 392px;min-height:0}
 main>*{min-height:0;overflow-y:auto;padding:16px 20px}
 #left{border-right:1px solid var(--line)}#right{border-left:1px solid var(--line)}
@@ -53,10 +54,11 @@ button.go.busy::after,button.apply.busy::after{border-color:rgba(255,255,255,.35
 @media(prefers-reduced-motion:reduce){.ring,button.busy::after{animation-duration:2.4s}}
 #toasts{position:fixed;right:18px;bottom:18px;z-index:20;display:flex;flex-direction:column;gap:8px;width:340px}
 .toast{background:#fff;border:1px solid var(--line);border-left:3px solid var(--bad);border-radius:8px;box-shadow:0 6px 20px rgba(22,33,27,.16);padding:10px 12px;font-size:14px;cursor:pointer;overflow-wrap:anywhere}
+.brand{display:flex;align-items:center;gap:7px}
 </style></head><body>
-<header><h1>Engram</h1>
+<header><h1 class="brand"><img src="/logo.png" alt="" width="30" height="30">Engram</h1>
 <div class="row"><input id="path" aria-label="Local model folder" placeholder="Absolute path to a Hugging Face model folder" spellcheck="false"><button id="load">Load</button><button type="button" class="i" id="modelinfo" data-tip="No model is loaded.">i</button></div>
-<span id="spin" class="ring" hidden aria-hidden="true"></span></header>
+<span id="spin" class="ring" hidden aria-hidden="true"></span><label id="portBox" hidden>Port<input id="port" type="number" min="1024" max="65535"></label></header>
 <main>
 <aside id="left">
 <section><h2><label for="prompt" style="all:unset"><b>Prompt</b></label></h2>
@@ -123,7 +125,7 @@ button.go.busy::after,button.apply.busy::after{border-color:rgba(255,255,255,.35
 <section><div class="head"><h2><b>Figure 4.</b> Matrix<button type="button" class="i" id="matinfo" data-tip="Open a matrix from Figure 3.">i</button></h2><div class="seg" id="matseg"><button data-v="weights">Weights</button><button data-v="lit" aria-pressed="true">Lit</button><button data-v="edit">Edit</button></div></div>
 <p id="matname">Trace a prompt to open a matrix.</p><canvas id="matrix" aria-label="Matrix heatmap. Drag to select rows and columns."></canvas></section>
 <section id="contribbox" hidden><h2><b>Table 1.</b> Largest contributions<button type="button" class="i" data-tip="These entries of the matrix did the most work for the selected token. W is the weight, x is its input, and W·x is the product of the two.">i</button></h2><table><thead><tr><th>row, col</th><th>W</th><th>x</th><th>W·x</th></tr></thead><tbody id="contrib"></tbody></table></section>
-</aside></main><div id="tip"></div><div id="toasts" aria-live="assertive"></div>
+</aside></main><div id="tip"></div><div id="toasts" aria-live="assertive"></div><aside id="desk" hidden>Engram works better in the desktop app.<div><a href="https://github.com/AbhinavMir/engram#5-desktop-application" target="_blank" rel="noopener">Get the app</a><button id="deskClose">Dismiss</button></div></aside>
 <script>
 const $=id=>document.getElementById(id),AMB=[31,111,74],CY=[9,54,38],BG=[238,245,240];
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -272,5 +274,7 @@ $('save').onclick=guard(async()=>{const r=await api('/api/export',{name:$('saven
 $('trace').onclick=guard(async()=>{const t=await api('/api/trace',{prompt:$('prompt').value,chat:$('chat').checked});setTrace(t,true);S.target=null;$('target').value='';setCurrent();await doTrack();await openPlace();$('gridwrap').scrollTop=Math.max(0,G.top+S.pos*G.rh-$('gridwrap').clientHeight*.55)});
 $('load').onclick=guard(async()=>{const j=await api('/api/load',{path:$('path').value});S.tr=null;S.matName=null;setInfo(j.info)});
 addEventListener('resize',()=>{drawGrid(1);drawMap();drawChart();renderMatrix()});
+if(window.engramDesktop){engramDesktop.getPort().then(p=>{$('port').value=p;$('portBox').hidden=false;$('port').onchange=guard(async()=>{const n=+$('port').value,r=await engramDesktop.setPort(n);if(r.error){$('port').value=p;throw new Error(r.error)}})})}
+else if(!sessionStorage.getItem('deskClosed')){$('desk').hidden=false;$('deskClose').onclick=()=>{sessionStorage.setItem('deskClosed','1');$('desk').hidden=true}}
 fetch('/api/state').then(r=>r.json()).then(j=>{if(j.suggest)$('path').value=j.suggest;if(j.info)setInfo(j.info)});
 </script></body></html>
