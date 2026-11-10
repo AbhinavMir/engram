@@ -4,8 +4,9 @@ Every matrix is handled in (output, input) orientation, so W @ x is its forward 
 weights are stored as (input, output) and are transposed on the way in and out.
 Edits are stored as float32 deltas. The original values of touched tensors are kept for exact rollback.
 """
-import base64, hashlib, json, os, re, time
+import base64, glob, hashlib, json, os, re, shutil, tempfile, time
 import torch, torch.nn as nn, torch.nn.functional as F
+from safetensors import safe_open
 from safetensors.torch import save_file, load_file
 
 MAX_TOKENS, MAX_NEW, POOL_ROWS, POOL_COLS = 200, 24, 220, 440
@@ -332,6 +333,32 @@ class Engine:
         meta = dict(model=s.name, sha256=h, tensors={k: list(v.shape) for k, v in total.items()}, edits=[dict(label=e["label"], stats=e["stats"], spec=e["spec"]) for e in s.edits if e["on"]])
         json.dump(meta, open(path[:-12] + ".json", "w"), indent=1)
         return dict(path=path, sha256=h)
+
+    def export_model(s, name):
+        """Write a complete Hugging Face model folder with the active edits built in."""
+        name = re.sub(r"[^A-Za-z0-9_-]+", "_", name or "").strip("_") or time.strftime("model_%Y%m%d_%H%M%S")
+        if not any(e["on"] for e in s.edits): raise BenchError("No active edits to write.")
+        os.makedirs(EXPORT_DIR, exist_ok=True); path = os.path.join(EXPORT_DIR, name)
+        if os.path.exists(path): raise BenchError(f"This folder already exists: {path}")
+        need = sum(p.numel() * p.element_size() for p in s.model.parameters())
+        free = shutil.disk_usage(EXPORT_DIR).free
+        if free < need * 1.1: raise BenchError(f"This model needs {need / 1e9:.1f} GB and the disk has {free / 1e9:.1f} GB free.")
+        s._sync(True); tmp = tempfile.mkdtemp(dir=EXPORT_DIR, prefix=f".{name}.")
+        try:
+            s.model.save_pretrained(tmp, safe_serialization=True); s.tok.save_pretrained(tmp)
+            checked = 0; live = s.model.state_dict()
+            for file in glob.glob(os.path.join(tmp, "*.safetensors")):
+                with safe_open(file, "pt") as f:
+                    for k in f.keys():
+                        if k in s.orig:
+                            if not torch.equal(f.get_tensor(k), live[k].detach().cpu()): raise BenchError(f"The written weights differ from the edited weights: {k}")
+                            checked += 1
+            if checked != len(s.orig): raise BenchError(f"The written model has {checked} of the {len(s.orig)} edited matrices.")
+            json.dump(dict(base_model=s.name, edits=[dict(label=e["label"], stats=e["stats"], spec=e["spec"]) for e in s.edits if e["on"]]), open(os.path.join(tmp, "engram_edits.json"), "w"), indent=1)
+            os.chmod(tmp, 0o755); os.rename(tmp, path)
+        except BaseException:
+            shutil.rmtree(tmp, ignore_errors=True); raise
+        return dict(path=path, checked=checked, gigabytes=round(sum(os.path.getsize(os.path.join(path, f)) for f in os.listdir(path)) / 1e9, 2))
 
     def import_delta(s, path):
         if not os.path.isfile(path): raise BenchError(f"File not found: {path}")

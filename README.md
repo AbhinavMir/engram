@@ -1,5 +1,7 @@
 # Engram
 
+<video src="docs/demo.mp4" poster="docs/demo.jpg" controls width="100%"></video>
+
 [![Engram changes the answer of a language model from Paris to Berlin. Open the video.](docs/demo.jpg)](docs/demo.mp4)
 
 [Watch the demonstration (MP4)](docs/demo.mp4)
@@ -45,7 +47,7 @@ Open http://127.0.0.1:7860. The server accepts requests from the local computer 
 3. Set the layer and the strength. Start with a small strength.
 4. Press Apply edit, and compare the Base and Edited answers.
 
-Clicking a row in Figure 1 inspects that token and does not move the edit. Each new Apply replaces the previous try. Applied edits can be turned off, removed, or saved as a `safetensors` delta in `exports/`.
+Clicking a row in Figure 1 inspects that token and does not move the edit. Each new Apply replaces the previous try. Applied edits can be turned off, removed, or saved as a `safetensors` delta in `exports/`. Write model writes a complete Hugging Face model folder to `exports/`, with the active edits built in and a record in `engram_edits.json`.
 
 ## 4. Edits written by an AI
 

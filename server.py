@@ -25,6 +25,7 @@ def route(path, b):
     if path == "/api/toggle": e.toggle(int(b["id"]), b["on"]); return retrace(e)
     if path == "/api/remove": e.remove(int(b["id"])); return retrace(e)
     if path == "/api/export": return e.export(b.get("name"))
+    if path == "/api/export_model": return e.export_model(b.get("name"))
     if path == "/api/import": e.import_delta(b["path"]); return retrace(e)
     raise BenchError(f"Unknown route {path}")
 

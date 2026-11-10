@@ -43,6 +43,15 @@ eg.apply(dict(op="rank_one", module=mg.name, alpha=2.0, target=dict(id=5), foil=
 dg = g.state_dict()[mg.param] - og
 res.append(ok(mg.flip and abs(float(dg.double().norm()) - 2.0) < 1e-3, "Conv1D orientation handled"))
 eg.matrix(mg.name, 0)
+import engine as bench, shutil; bench.EXPORT_DIR = tempfile.mkdtemp()
+written = eg.export_model("tiny"); back = GPT2LMHeadModel.from_pretrained(written["path"]).eval()
+res.append(ok(torch.equal(back.state_dict()[mg.param], g.state_dict()[mg.param]) and not torch.equal(back.state_dict()[mg.param], og), "written model holds the edited weights"))
+try: eg.export_model("tiny"); res.append(ok(False, "existing folder rejected"))
+except BenchError: res.append(ok(True, "existing folder rejected"))
+eg.toggle(eg.edits[0]["id"], False)
+try: eg.export_model("off"); res.append(ok(False, "no active edits rejected"))
+except BenchError: res.append(ok(True, "no active edits rejected"))
+shutil.rmtree(bench.EXPORT_DIR)
 del e, eg, g
 
 # paper reproduction
